@@ -1,0 +1,335 @@
+@model TrenzoStore.Models.Entities.Product
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- Product Images -->
+            <div class="product-images">
+                @if (Model.Images.Any())
+                {
+                    <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            @{
+                                var imagesList = Model.Images.ToList();
+                            }
+                            @for (int i = 0; i < imagesList.Count; i++)
+                            {
+                                <div class="carousel-item @(i == 0 ? "active" : "")">
+                                    <img src="@imagesList[i].ImageUrl" 
+                                         alt="@imagesList[i].AltText" 
+                                         class="d-block w-100 rounded"
+                                         style="height: 500px; object-fit: cover;">
+                                </div>
+                            }
+                        </div>
+                        @if (Model.Images.Count > 1)
+                        {
+                            <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </button>
+                        }
+                    </div>
+                    
+                    @if (imagesList.Count > 1)
+                    {
+                        <div class="row mt-3">
+                            @for (int i = 0; i < imagesList.Count; i++)
+                            {
+                                <div class="col-3">
+                                    <img src="@imagesList[i].ImageUrl" 
+                                         alt="@imagesList[i].AltText" 
+                                         class="img-thumbnail cursor-pointer thumbnail-image"
+                                         data-bs-target="#productCarousel" 
+                                         data-bs-slide-to="@i"
+                                         style="height: 80px; object-fit: cover;">
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded" style="height: 500px;">
+                        <i class="fas fa-image text-muted fa-5x"></i>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <!-- Product Information -->
+            <div class="product-info">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Products")">Products</a></li>
+                        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Products", new { categoryId = Model.CategoryId })">@Model.Category.Name</a></li>
+                        <li class="breadcrumb-item active">@Model.Name</li>
+                    </ol>
+                </nav>
+
+                <h1 class="h2 mb-3">@Model.Name</h1>
+                
+                <div class="mb-3">
+                    <span class="badge bg-secondary">@Model.Category.Name</span>
+                    @if (Model.IsFeatured)
+                    {
+                        <span class="badge bg-warning text-dark">Featured</span>
+                    }
+                </div>
+
+                <div class="price-section mb-4">
+                    <div class="d-flex align-items-center">
+                        <span class="h3 text-primary mb-0">${@Model.Price.ToString("F2")}</span>
+                        @if (Model.CompareAtPrice.HasValue && Model.CompareAtPrice > Model.Price)
+                        {
+                            <span class="text-muted text-decoration-line-through ms-2">${@Model.CompareAtPrice.Value.ToString("F2")}</span>
+                            <span class="badge bg-success ms-2">
+                                @(Math.Round(((Model.CompareAtPrice.Value - Model.Price) / Model.CompareAtPrice.Value) * 100))% OFF
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <p class="text-muted mb-1">SKU: @Model.SKU</p>
+                    <div class="stock-info">
+                        @if (Model.StockQuantity > 0)
+                        {
+                            <span class="text-success">
+                                <i class="fas fa-check-circle me-1"></i>
+                                @if (Model.StockQuantity > 10)
+                                {
+                                    <text>In Stock</text>
+                                }
+                                else
+                                {
+                                    <text>Only @Model.StockQuantity left in stock</text>
+                                }
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">
+                                <i class="fas fa-times-circle me-1"></i>
+                                Out of Stock
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <p class="lead">@Model.ShortDescription</p>
+                </div>
+
+                <!-- Product Variants -->
+                @if (Model.Variants.Any())
+                {
+                    <div class="variants-section mb-4">
+                        <h6>Available Options:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="sizeSelect" class="form-label">Size:</label>
+                                <select id="sizeSelect" class="form-select">
+                                    <option value="">Select Size</option>
+                                    @foreach (var size in Model.Variants.Select(v => v.Size).Distinct())
+                                    {
+                                        <option value="@size">@size</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="colorSelect" class="form-label">Color:</label>
+                                <select id="colorSelect" class="form-select">
+                                    <option value="">Select Color</option>
+                                    @foreach (var color in Model.Variants.Select(v => v.Color).Distinct())
+                                    {
+                                        <option value="@color">@color</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div id="variantInfo" class="mt-2 text-muted" style="display: none;">
+                            <small>Variant SKU: <span id="variantSku"></span></small>
+                            <br><small>Stock: <span id="variantStock"></span></small>
+                        </div>
+                    </div>
+                }
+
+                <!-- Add to Cart Form -->
+                <form id="addToCartForm" class="mb-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <input type="hidden" name="productVariantId" id="selectedVariantId" value="" />
+                    
+                    <div class="row align-items-end">
+                        <div class="col-md-4">
+                            <label for="quantity" class="form-label">Quantity:</label>
+                            <input type="number" name="quantity" id="quantity" class="form-control" value="1" min="1" max="@Model.StockQuantity">
+                        </div>
+                        <div class="col-md-8">
+                            <button type="submit" class="btn btn-primary btn-lg w-100" @(Model.StockQuantity <= 0 ? "disabled" : "")>
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Product Description -->
+                <div class="description-section">
+                    <h5>Description</h5>
+                    <div class="border-top pt-3">
+                        @Html.Raw(Model.Description.Replace("\n", "<br>"))
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4>You might also like</h4>
+            <div id="relatedProducts" class="row">
+                <!-- Related products will be loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            const variants = @Html.Raw(Json.Serialize(Model.Variants.Select(v => new { 
+                Id = v.Id, 
+                Size = v.Size, 
+                Color = v.Color, 
+                SKU = v.SKU, 
+                StockQuantity = v.StockQuantity,
+                PriceAdjustment = v.PriceAdjustment 
+            })));
+
+            // Handle variant selection
+            $('#sizeSelect, #colorSelect').change(function() {
+                const selectedSize = $('#sizeSelect').val();
+                const selectedColor = $('#colorSelect').val();
+                
+                if (selectedSize && selectedColor) {
+                    const variant = variants.find(v => v.Size === selectedSize && v.Color === selectedColor);
+                    if (variant) {
+                        $('#selectedVariantId').val(variant.Id);
+                        $('#variantSku').text(variant.SKU);
+                        $('#variantStock').text(variant.StockQuantity + ' available');
+                        $('#variantInfo').show();
+                        $('#quantity').attr('max', variant.StockQuantity);
+                        
+                        // Update add to cart button based on variant stock
+                        const addToCartBtn = $('#addToCartForm button[type="submit"]');
+                        if (variant.StockQuantity <= 0) {
+                            addToCartBtn.prop('disabled', true).html('<i class="fas fa-times me-2"></i>Out of Stock');
+                        } else {
+                            addToCartBtn.prop('disabled', false).html('<i class="fas fa-shopping-cart me-2"></i>Add to Cart');
+                        }
+                    }
+                } else {
+                    $('#selectedVariantId').val('');
+                    $('#variantInfo').hide();
+                    $('#quantity').attr('max', @Model.StockQuantity);
+                }
+            });
+
+            // Handle add to cart
+            $('#addToCartForm').submit(function(e) {
+                e.preventDefault();
+                
+                const formData = $(this).serialize();
+                
+                $.post('@Url.Action("AddToCart", "Cart")', formData)
+                    .done(function(response) {
+                        if (response.success) {
+                            // Update cart count
+                            updateCartCount();
+                            
+                            // Show success message
+                            showToast('Success', 'Item added to cart successfully!', 'success');
+                        } else {
+                            showToast('Error', response.message || 'Failed to add item to cart.', 'error');
+                        }
+                    })
+                    .fail(function() {
+                        showToast('Error', 'An error occurred while adding item to cart.', 'error');
+                    });
+            });
+
+            // Load related products
+            loadRelatedProducts();
+        });
+
+        function loadRelatedProducts() {
+            $.get('@Url.Action("GetRelatedProducts", "Products")', { productId: @Model.Id, categoryId: @Model.CategoryId })
+                .done(function(data) {
+                    $('#relatedProducts').html(data);
+                });
+        }
+
+        function showToast(title, message, type) {
+            // Simple toast notification
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <strong>${title}:</strong> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            // Add toast container if it doesn't exist
+            if (!$('#toastContainer').length) {
+                $('body').append('<div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>');
+            }
+            
+            const $toast = $(toastHtml);
+            $('#toastContainer').append($toast);
+            
+            const toast = new bootstrap.Toast($toast[0]);
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            $toast.on('hidden.bs.toast', function() {
+                $(this).remove();
+            });
+        }
+    </script>
+}
+
+<style>
+    .thumbnail-image {
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    
+    .thumbnail-image:hover {
+        opacity: 0.8;
+    }
+    
+    .variants-section .form-select {
+        border-radius: 0.375rem;
+    }
+    
+    .price-section {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 1rem;
+    }
+    
+    .description-section {
+        margin-top: 2rem;
+    }
+</style>
